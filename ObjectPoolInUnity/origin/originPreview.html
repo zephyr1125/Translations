@@ -1,0 +1,119 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8" />
+  </head>
+  <body style="font-size:12px">
+    <p id="1">![ObjectPooling-feature](http://img.tairan.com/2016-12-19-ObjectPooling-feature-1-250x250.png)</p>
+    <p id="2">Picture this: You’re testing your latest and greatest shoot ‘em up. Enemies fly on screen as fast as your fingers can tap, then boom! A measly frame skip later and you’re nothing more than a pitiful pile of ash at the hands of some angry, bug-eyed Martian from Neptune!</p>
+    <p id="3">In this scenario, you’re outnumbered 1000 to 1\. There’s no need to give the Neptunians the upper hand with unexpected memory spikes. Sound familiar? Go ahead and pull up a chair and get up to speed on *Object Pooling*.</p>
+    <p id="4">In this Unity tutorial, you’ll learn:</p>
+    <p id="5">* All about object pooling</p>
+    <p id="6">* How to pool a game object</p>
+    <p id="7">* How to expand your object pool at runtime if necessary</p>
+    <p id="8">* How to extend your object pool to accommodate different objects</p>
+    <p id="9">By the end of this tutorial, you’ll have a generic script you can readily drop into a new game. Additionally, you’ll understand how to retrofit the same script for an existing game.</p>
+    <p id="10">*Prerequisites:* You’ll need to be familiar with some basic C# and how to work within Unity’s development environment. If you need some assistance getting up to speed, check out the [Unity tutorials](https://www.raywenderlich.com/unity-tutorials "Unity tutorials") on this site.</p>
+    <p id="11">## What is Object Pooling?</p>
+    <p id="12">`Instantiate()` and `Destroy()` are useful and necessary methods during gameplay. Each generally requires minimal CPU time.</p>
+    <p id="13">However, for objects created during gameplay that have a short lifespan and get destroyed in vast numbers per second, the CPU needs to allocate considerably more time.</p>
+    <p id="14">![Bullets are a great example of a GameObject that could be pooled.](http://img.tairan.com/2016-12-19-whatthe-650x480.png)</p>
+    <p id="15">Bullets are a great example of a GameObject that you might pool.</p>
+    <p id="16">Additionally, Unity uses *Garbage Collection* to deallocate memory that’s no longer in use. Repeated calls to `Destroy()` frequently trigger this task, and it has a knack for slowing down CPUs and introducing pauses to gameplay.</p>
+    <p id="17">This behavior is critical in resource-constrained environments such as mobile devices and web builds.</p>
+    <p id="18">*Object pooling* is where you pre-instantiate all the objects you’ll need at any specific moment before gameplay — for instance, during a loading screen. Instead of creating new objects and destroying old ones during gameplay, your game reuses objects from a “pool”.</p>
+    <p id="19">![NonVsPooling](http://img.tairan.com/2016-12-19-NonVsPooling.png)</p>
+    <p id="20">## Getting Started</p>
+    <p id="21">If you don’t already have Unity 5 or newer, download it from [Unity’s website](https://unity3d.com/get-unity/download "Unity's website").</p>
+    <p id="22">Download the [starter project](https://koenig-media.raywenderlich.com/uploads/2016/06/SuperRetroShooter_Starter.zip "starter project"), unzip and open `SuperRetroShooter_Starter` project in Unity — it’s a pre-built vertical scroll shooter.</p>
+    <p id="23">*Note*: Credit goes to Master484, Marcus, Luis Zuno and Skorpio for the medley of art assets from [OpenGameArt](http://opengameart.org). The royalty-free music was from the excellent [Bensound](http://www.bensound.com "Bensound").</p>
+    <p id="24">Feel free to have a look at some of the scripts, such as *Barrier*; they are generic and useful, but their explanations are beyond the scope of this tutorial.</p>
+    <p id="25">As you work through everything, it will be helpful to see what’s happening in your game’s Hierarchy during gameplay. Therefore, I recommend that you *deselect Maximize on Play* in the *Game Tab’s toolbar*.</p>
+    <p id="26">![maximise](http://img.tairan.com/2016-12-19-maximise.png)</p>
+    <p id="27">Click the *play button* to see what you have. :]</p>
+    <p id="28">Note how there are many `PlayerBullet(Clone)` objects instantiated in the Hierarchy when shooting. Once they hit an enemy or leave the screen, they are destroyed.</p>
+    <p id="29">Making matters worse is the act of collecting those randomly dropped power-ups; they fill the game’s Hierarchy with bullet clones with just a few shots and destroy them all the very next second.</p>
+    <p id="30">![Youaregoingtofixthat](http://img.tairan.com/2016-12-19-Youaregoingtofixthat.gif)</p>
+    <p id="31">In its current state, Super Retro Shooter is a “bad memory citizen”, but you’ll be the hero that gets this shooter firing on all cylinders and using resources more scrupulously.</p>
+    <p id="32">### Time to Get Your Feet Wet</p>
+    <p id="33">Click on the *Game Controller* GameObject in the Hierarchy. Since this object will persist in the Scene, you’ll add your object pooler script here.</p>
+    <p id="34">In the Inspector, click the *Add Component* button, and select *New C# Script*. Give it the name *ObjectPooler*.</p>
+    <p id="35">*Double-click* the new script to open it in MonoDevelop, and add the following code to the class:</p>
+    <p id="36">|  </p>
+    <p id="37">public static ObjectPooler SharedInstance;</p>
+    <p id="38">void Awake() {</p>
+    <p id="39">  SharedInstance = this;</p>
+    <p id="40">}</p>
+    <p id="41"> |</p>
+    <p id="42">Several scripts will need to access the object pool during gameplay, and `public static instance` allows other scripts to access it without getting a Component from a GameObject.</p>
+    <p id="43">At the top of the script, add the following `using` statement:</p>
+    <p id="44">|  </p>
+    <p id="45">using System.Collections.Generic;</p>
+    <p id="46"> |</p>
+    <p id="47">You’ll be `using` a generic list to store your pooled objects. This statement gives you access to generic data structures so that you can use the `List` class in your script.</p>
+    <p id="48">*Note*: Generic? *Nobody* wants to be generic! Everybody wants to be special!</p>
+    <p id="49">In a programming language like C#, generics allow you to write code that can be used by many different types while still enforcing type safety.</p>
+    <p id="50">Typically, you use generics when working with collections. This approach allows you to have an array that only allows one type of object, preventing you from putting a dog inside a cat array, although that could be pretty funny. :]</p>
+    <p id="51">Speaking of lists, add the object pool list and two new public variables:</p>
+    <p id="52">|  </p>
+    <p id="53">public ListGameObject&gt; pooledObjects;</p>
+    <p id="54">public GameObject objectToPool;</p>
+    <p id="55">public int amountToPool;</p>
+    <p id="56"> |</p>
+    <p id="57">The naming is fairly self-explanatory.</p>
+    <p id="58">By using the Inspector in Unity, you’ll be able to specify a GameObject to pool and a number to pre-instantiate. You’ll do that in a minute.</p>
+    <p id="59">Meanwhile, add this code to *Start()*:</p>
+    <p id="60">|  </p>
+    <p id="61">pooledObjects = [new](http://www.google.com/search?q=new+msdn.microsoft.com) ListGameObject&gt;();</p>
+    <p id="62">for (int i = 0; i  amountToPool; i++) {</p>
+    <p id="63">  GameObject obj = (GameObject)Instantiate(objectToPool);</p>
+    <p id="64">  obj.SetActive(false); </p>
+    <p id="65">  pooledObjects.Add(obj);</p>
+    <p id="66">}</p>
+    <p id="67"> |</p>
+    <p id="68">The `for` loop will instantiate the `objectToPool` GameObject the specified number of times in `numberToPool`. Then the GameObjects are set to an inactive state before adding them to the `pooledObjects`list.</p>
+    <p id="69">Go back to Unity and add the *Player Bullet Prefab* to the *objectToPool* variable in the Inspector. In the *numberToPool* field, type *20*.</p>
+    <p id="70">![ObjectPoolSetup](http://img.tairan.com/2016-12-19-ObjectPoolSetup.gif)</p>
+    <p id="71">Run the game again. You should now have 20 pre-instantiated bullets in the Scene with nowhere to go.</p>
+    <p id="72">![Well done! You now have an object pool :]](http://img.tairan.com/2016-12-19-ScreenCap1-208x500.png)</p>
+    <p id="73">Well done! You now have an object pool. :]</p>
+    <p id="74">### Dipping into the Object Pool</p>
+    <p id="75">Jump back into the *ObjectPooler* script and add the following new method:</p>
+    <p id="76">|  </p>
+    <p id="77">public GameObject GetPooledObject() {</p>
+    <p id="78">//1</p>
+    <p id="79">  for (int i = 0; i  pooledObjects.Count; i++) {</p>
+    <p id="80">//2</p>
+    <p id="81">    if (!pooledObjects[i].activeInHierarchy) {</p>
+    <p id="82">      return pooledObjects[i];</p>
+    <p id="83">    }</p>
+    <p id="84">  }</p>
+    <p id="85">//3 </p>
+    <p id="86">  return null;</p>
+    <p id="87">}</p>
+    <p id="88"> |</p>
+    <p id="89">The first thing to note is that this method has a `GameObject` return type as opposed to `void`. This means a script can ask for a pooled object from `GetPooledObject` and it’ll be able to return a GameObject in response. Here’s what else is happening here:</p>
+    <p id="90">1. This method uses a `for` loop to iterate through your `pooledObjects` list.</p>
+    <p id="91">2. You check to see if the item in your list is *not* currently active in the Scene. If it is, the loop moves to the next object in the list. If not, you exit the method and hand the inactive object to the method that called `GetPooledObject`.</p>
+    <p id="92">3. If there are currently no inactive objects, you exit the method and return nothing.</p>
+    <p id="93">Now that you can ask the pool for an object, you need to replace your bullet instantiation and destroy code to use the object pool instead.</p>
+    <p id="94">Player bullets are instantiated in two methods in the `ShipController` script.</p>
+    <p id="95">* `Shoot()`</p>
+    <p id="96">* `ActivateScatterShotTurret()`</p>
+    <p id="97">Open the *ShipController* script in MonoDevelop and find the lines:</p>
+    <p id="98">|  </p>
+    <p id="99">Instantiate(playerBullet, turret.transform.position, turret.transform.rotation);</p>
+    <p id="100"> |</p>
+    <p id="101">Replace *both* instances with the following code:</p>
+    <p id="102">|  </p>
+    <p id="103">GameObject bullet = ObjectPooler.SharedInstance.GetPooledObject(); </p>
+    <p id="104">  if (bullet != null) {</p>
+    <p id="105">    bullet.transform.position = turret.transform.position;</p>
+    <p id="106">    bullet.transform.rotation = turret.transform.rotation;</p>
+    <p id="107">    bullet.SetActive(true);</p>
+    <p id="108">  }</p>
+    <p id="109"> |</p>
+    <p id="110">*Note*: Make sure this replacement is made in both `Shoot()` and `ActivateScatterShotTurret()`before you continue.</p>
+    <p id="111">Previously, the methods iterated through the list of currently active turrets on the player’s ship (depending on power-ups) and instantiated a player bullet at the turrets position and rotation.</p>
+    <p id="112">You’ve set it to ask your `ObjectPooler` script for a pooled object. If one is available, it’s set to the position and rotation of the turret as before, and then set to `active` to rain down fire upon your enemy. :]</p>
+  </body>
+</html>

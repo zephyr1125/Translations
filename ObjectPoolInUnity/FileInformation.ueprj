@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ProjectManagement>
+  <ProjectInformation>
+    <Name>
+      <ProjectName>ObjectPoolInUnity</ProjectName>
+      <SourceLanguage>英语</SourceLanguage>
+      <TargetLanguage>中文简体</TargetLanguage>
+      <ProjectSchedule>0%</ProjectSchedule>
+      <CreationTime>2016/12/19 21:01:40</CreationTime>
+      <EndTime>2016/12/25 21:01:15</EndTime>
+      <RecentTime>2016/12/19 21:01:40</RecentTime>
+      <ProjectLocation>D:\my\Translations\ObjectPoolInUnity</ProjectLocation>
+      <FileInf>D:\my\Translations\ObjectPoolInUnity\FileInformation.ueprj</FileInf>
+      <Client>
+      </Client>
+      <Remarks>
+      </Remarks>
+    </Name>
+    <File>
+      <FileName>origin.txt</FileName>
+      <FilePath>D:\my\Translations\ObjectPoolInUnity\origin.txt</FilePath>
+      <SideFile>D:\my\Translations\ObjectPoolInUnity\origin\origin.txt</SideFile>
+      <UtxPath>D:\my\Translations\ObjectPoolInUnity\origin\origin.utx</UtxPath>
+      <OriginalCount>1399</OriginalCount>
+      <Translatedcount>0</Translatedcount>
+      <SourceLanguage>英语</SourceLanguage>
+      <TargetLanguage>中文简体</TargetLanguage>
+    </File>
+  </ProjectInformation>
+  <MemoryManagement>
+    <Memory>
+      <UseState>true</UseState>
+      <UpdateStatus>true</UpdateStatus>
+      <MemoryName>Tech.uetm</MemoryName>
+      <MemoryPaths>D:\my\Translations\MemoryLibrary\Tech\Tech.uetm</MemoryPaths>
+      <Source>英语</Source>
+      <Target>中文简体</Target>
+    </Memory>
+  </MemoryManagement>
+  <TerminologyManagement>
+    <TerminologyDatabase>
+      <UseState>true</UseState>
+      <UpdateStatus>true</UpdateStatus>
+      <TerminologyDatabaseName>Tech.uetb</TerminologyDatabaseName>
+      <TerminologyDatabasePath>D:\my\Translations\TermBase\Tech\Tech.uetb</TerminologyDatabasePath>
+      <Source>英语</Source>
+      <Target>中文简体</Target>
+    </TerminologyDatabase>
+  </TerminologyManagement>
+</ProjectManagement>

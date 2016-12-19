@@ -1,0 +1,224 @@
+![ObjectPooling-feature](http://img.tairan.com/2016-12-19-ObjectPooling-feature-1-250x250.png)
+
+Picture this: You’re testing your latest and greatest shoot ‘em up. Enemies fly on screen as fast as your fingers can tap, then boom! A measly frame skip later and you’re nothing more than a pitiful pile of ash at the hands of some angry, bug-eyed Martian from Neptune!
+想象一下：你正在测试你最新的和最棒的一个射击游戏。敌人在以你能掌握的最快速度来回飞行，然后，砰！卡了一帧之后，你就被打成了一个凶神恶煞的外星人手中的一团残渣。
+In this scenario, you’re outnumbered 1000 to 1\. There’s no need to give the Neptunians the upper hand with unexpected memory spikes. Sound familiar? Go ahead and pull up a chair and get up to speed on *Object Pooling*.
+这可是场以一敌千的战斗，不应该由于预期之外的内存尖峰导致输给外星人。似曾相识不？来，拉把椅子，听听这篇关于『对象池技术』的演说吧。
+In this Unity tutorial, you’ll learn:
+在这篇Unity教程中，你将学到：
+* All about object pooling
+* 一切都是关于对象池技术的内容
+* How to pool a game object
+* 如何将一个game object入池
+* How to expand your object pool at runtime if necessary
+* 如何在运行时按需扩展对象池
+* How to extend your object pool to accommodate different objects
+* 如何扩展对象池以适应不同的对象
+By the end of this tutorial, you’ll have a generic script you can readily drop into a new game. Additionally, you’ll understand how to retrofit the same script for an existing game.
+在教程的最后，你会得到一个可以直接丢入新游戏的通用脚本。而且，你会懂得如何为现有的游戏改进这个脚本。
+*Prerequisites:* You’ll need to be familiar with some basic C# and how to work within Unity’s development environment. If you need some assistance getting up to speed, check out the [Unity tutorials](https://www.raywenderlich.com/unity-tutorials "Unity tutorials") on this site.
+*预备知识：*你需要熟悉C#基础并且知道如何操作Unity的开发环境。如果你需要帮助，查看这里[Unity教程](https://www.raywenderlich.com/unity-tutorials "Unity tutorials")
+## What is Object Pooling?
+## 什么是对象池技术？
+`Instantiate()` and `Destroy()` are useful and necessary methods during gameplay. Each generally requires minimal CPU time.
+`Instantiate()` 和 `Destroy()` 是在游戏流程中好用而必备的方法。
+However, for objects created during gameplay that have a short lifespan and get destroyed in vast numbers per second, the CPU needs to allocate considerably more time.
+然而，对于生命周期短暂而且每秒大量摧毁的对象群而言，CPU进行分配的时间十分显著。
+![Bullets are a great example of a GameObject that could be pooled.](http://img.tairan.com/2016-12-19-whatthe-650x480.png)
+![子弹就是一个适合入池的GameObject的好例子](http://img.tairan.com/2016-12-19-whatthe-650x480.png)
+Bullets are a great example of a GameObject that you might pool.
+子弹就是一个适合入池的GameObject的好例子
+Additionally, Unity uses *Garbage Collection* to deallocate memory that’s no longer in use. Repeated calls to `Destroy()` frequently trigger this task, and it has a knack for slowing down CPUs and introducing pauses to gameplay.
+并且，Unity使用*垃圾收集(Garbage Collection)*技术来释放不需要继续使用的内存。不断调用`Destroy()`会频繁的激活收集，而这会拖慢CPU导致游戏流程的卡顿。
+This behavior is critical in resource-constrained environments such as mobile devices and web builds.
+这一行为在资源首先的环境下比如移动设备和网页中尤为致命。
+*Object pooling* is where you pre-instantiate all the objects you’ll need at any specific moment before gameplay — for instance, during a loading screen. Instead of creating new objects and destroying old ones during gameplay, your game reuses objects from a “pool”.
+*对象池技术*将尚未用到的对象放在游戏流程之前——比如在读取界面的时候——进行预先实例化。这样游戏可以从『池子』中重用对象，而不需在游戏流程中不断地创建和销毁。
+![NonVsPooling](http://img.tairan.com/2016-12-19-NonVsPooling.png)
+![是否使用池的比对](http://img.tairan.com/2016-12-19-NonVsPooling.png)
+## Getting Started
+## 开始
+If you don’t already have Unity 5 or newer, download it from [Unity’s website](https://unity3d.com/get-unity/download "Unity's website").
+如果还没有Unity5或者更新版本，从 [Unity官网](https://unity3d.com/get-unity/download "Unity官网")下载。
+Download the [starter project](https://koenig-media.raywenderlich.com/uploads/2016/06/SuperRetroShooter_Starter.zip "starter project"), unzip and open `SuperRetroShooter_Starter` project in Unity — it’s a pre-built vertical scroll shooter.
+然后下载 [起始项目](https://koenig-media.raywenderlich.com/uploads/2016/06/SuperRetroShooter_Starter.zip "起始项目")，解压并在Unity里打开 `SuperRetroShooter_Starter`项目——这是一个预先建好的纵向卷轴射击项目。
+*Note*: Credit goes to Master484, Marcus, Luis Zuno and Skorpio for the medley of art assets from [OpenGameArt](http://opengameart.org). The royalty-free music was from the excellent [Bensound](http://www.bensound.com "Bensound").
+*注意*：艺术资源归功于[OpenGameArt](http://opengameart.org)的 Master484, Marcus, Luis Zuno 和 Skorpio。免授权音乐则来自于杰出的[Bensound](http://www.bensound.com "Bensound")
+Feel free to have a look at some of the scripts, such as *Barrier*; they are generic and useful, but their explanations are beyond the scope of this tutorial.
+随意看看里面的脚本吧，比如*Barrier*；他们都是通用且实用的，不过这篇教程就不对它们进行解说了。
+As you work through everything, it will be helpful to see what’s happening in your game’s Hierarchy during gameplay. Therefore, I recommend that you *deselect Maximize on Play* in the *Game Tab’s toolbar*.
+在浏览这些时，注意在游戏流程中Hierarchy里都发生了些什么是很有帮助的。因此我建议取消*Game*页签的工具栏里的*Maximize on Play*选项。
+![maximise](http://img.tairan.com/2016-12-19-maximise.png)
+
+Click the *play button* to see what you have. :]
+：]
+Note how there are many `PlayerBullet(Clone)` objects instantiated in the Hierarchy when shooting. Once they hit an enemy or leave the screen, they are destroyed.
+
+Making matters worse is the act of collecting those randomly dropped power-ups; they fill the game’s Hierarchy with bullet clones with just a few shots and destroy them all the very next second.
+
+![Youaregoingtofixthat](http://img.tairan.com/2016-12-19-Youaregoingtofixthat.gif)
+
+In its current state, Super Retro Shooter is a “bad memory citizen”, but you’ll be the hero that gets this shooter firing on all cylinders and using resources more scrupulously.
+
+### Time to Get Your Feet Wet
+
+Click on the *Game Controller* GameObject in the Hierarchy. Since this object will persist in the Scene, you’ll add your object pooler script here.
+
+In the Inspector, click the *Add Component* button, and select *New C# Script*. Give it the name *ObjectPooler*.
+
+*Double-click* the new script to open it in MonoDevelop, and add the following code to the class:
+
+|  
+|  
+public static ObjectPooler SharedInstance;
+
+void Awake() {
+
+  SharedInstance = this;
+
+}
+}
+ |
+ |
+Several scripts will need to access the object pool during gameplay, and `public static instance` allows other scripts to access it without getting a Component from a GameObject.
+
+At the top of the script, add the following `using` statement:
+
+|  
+|  
+using System.Collections.Generic;
+
+ |
+ |
+You’ll be `using` a generic list to store your pooled objects. This statement gives you access to generic data structures so that you can use the `List` class in your script.
+
+*Note*: Generic? *Nobody* wants to be generic! Everybody wants to be special!
+
+In a programming language like C#, generics allow you to write code that can be used by many different types while still enforcing type safety.
+
+Typically, you use generics when working with collections. This approach allows you to have an array that only allows one type of object, preventing you from putting a dog inside a cat array, although that could be pretty funny. :]
+：]
+Speaking of lists, add the object pool list and two new public variables:
+
+|  
+|  
+public ListGameObject> pooledObjects;
+
+public GameObject objectToPool;
+
+public int amountToPool;
+
+ |
+ |
+The naming is fairly self-explanatory.
+
+By using the Inspector in Unity, you’ll be able to specify a GameObject to pool and a number to pre-instantiate. You’ll do that in a minute.
+
+Meanwhile, add this code to *Start()*:
+
+|  
+|  
+pooledObjects = [new](http://www.google.com/search?q=new+msdn.microsoft.com) ListGameObject>();
+
+for (int i = 0; i  amountToPool; i++) {
+
+  GameObject obj = (GameObject)Instantiate(objectToPool);
+
+  obj.SetActive(false); 
+
+  pooledObjects.Add(obj);
+
+}
+}
+ |
+ |
+The `for` loop will instantiate the `objectToPool` GameObject the specified number of times in `numberToPool`. Then the GameObjects are set to an inactive state before adding them to the `pooledObjects`list.
+
+Go back to Unity and add the *Player Bullet Prefab* to the *objectToPool* variable in the Inspector. In the *numberToPool* field, type *20*.
+
+![ObjectPoolSetup](http://img.tairan.com/2016-12-19-ObjectPoolSetup.gif)
+
+Run the game again. You should now have 20 pre-instantiated bullets in the Scene with nowhere to go.
+
+![Well done! You now have an object pool :]](http://img.tairan.com/2016-12-19-ScreenCap1-208x500.png)
+
+Well done! You now have an object pool. :]
+：]
+### Dipping into the Object Pool
+
+Jump back into the *ObjectPooler* script and add the following new method:
+
+|  
+|  
+public GameObject GetPooledObject() {
+
+//1
+//1
+  for (int i = 0; i  pooledObjects.Count; i++) {
+
+//2
+//2
+    if (!pooledObjects[i].activeInHierarchy) {
+
+      return pooledObjects[i];
+
+    }
+    }
+  }
+  }
+//3 
+//3 
+  return null;
+
+}
+}
+ |
+ |
+The first thing to note is that this method has a `GameObject` return type as opposed to `void`. This means a script can ask for a pooled object from `GetPooledObject` and it’ll be able to return a GameObject in response. Here’s what else is happening here:
+
+1. This method uses a `for` loop to iterate through your `pooledObjects` list.
+
+2. You check to see if the item in your list is *not* currently active in the Scene. If it is, the loop moves to the next object in the list. If not, you exit the method and hand the inactive object to the method that called `GetPooledObject`.
+
+3. If there are currently no inactive objects, you exit the method and return nothing.
+
+Now that you can ask the pool for an object, you need to replace your bullet instantiation and destroy code to use the object pool instead.
+
+Player bullets are instantiated in two methods in the `ShipController` script.
+
+* `Shoot()`
+
+* `ActivateScatterShotTurret()`
+
+Open the *ShipController* script in MonoDevelop and find the lines:
+
+|  
+|  
+Instantiate(playerBullet, turret.transform.position, turret.transform.rotation);
+
+ |
+ |
+Replace *both* instances with the following code:
+
+|  
+|  
+GameObject bullet = ObjectPooler.SharedInstance.GetPooledObject(); 
+
+  if (bullet != null) {
+
+    bullet.transform.position = turret.transform.position;
+
+    bullet.transform.rotation = turret.transform.rotation;
+
+    bullet.SetActive(true);
+
+  }
+  }
+ |
+ |
+*Note*: Make sure this replacement is made in both `Shoot()` and `ActivateScatterShotTurret()`before you continue.
+
+Previously, the methods iterated through the list of currently active turrets on the player’s ship (depending on power-ups) and instantiated a player bullet at the turrets position and rotation.
+
+You’ve set it to ask your `ObjectPooler` script for a pooled object. If one is available, it’s set to the position and rotation of the turret as before, and then set to `active` to rain down fire upon your enemy. :]
+：]
